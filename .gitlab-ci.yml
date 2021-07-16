@@ -1,0 +1,255 @@
+variables:
+  http_proxy: "$CODE_PROXY"
+  https_proxy: "$CODE_PROXY"
+  no_proxy: "xxx"
+  HTTP_PROXY: "$http_proxy"
+  HTTPS_PROXY: "$http_proxy"
+  NO_PROXY: "$no_proxy"
+  #CI_DEBUG_TRACE: "true"
+  # GIT_SUBMODULE_STRATEGY: recursive
+
+image: docker.xxx.com/shs_at_rnd/image_processing/hipacc_requirements:llvm_10.0 
+
+stages:
+  - build
+  - test
+  - package
+  - deploy
+  
+### Build Stage
+
+build:linux:
+  stage: build
+  tags:
+    - linux
+    - cuda
+  except:
+    - tags
+  before_script:
+    - git submodule sync --recursive
+    - git submodule update --init --recursive    
+  script:
+    - mkdir -p build/linux
+    - cd build/linux
+    - cmake ../.. -DCMAKE_INSTALL_PREFIX=`pwd`/../../install/linux -DCMAKE_BUILD_TYPE=Debug -DHIPACC_ENABLE_CODECOVERAGE=ON
+    - cmake --build . -j --config Debug
+    - make install
+  artifacts:
+    paths:
+      - build/linux # required for coverage analyses
+      - install/linux
+    when: on_success
+    expire_in: 30 minutes 
+    
+build:linux_tagged:
+  stage: build
+  tags:
+    - linux
+    - cuda
+  only:
+    - tags
+  before_script:
+    - git submodule sync --recursive
+    - git submodule update --init --recursive    
+  script:
+    - mkdir -p build/linux
+    - cd build/linux
+    - cmake ../.. -DCMAKE_INSTALL_PREFIX=`pwd`/../../install/linux -DCMAKE_BUILD_TYPE=Release
+    - cmake --build . -j --config Release
+    - make install
+  artifacts:
+    paths:
+      - build/linux
+      - install/linux
+    when: on_success
+    expire_in: 30 minutes 
+
+build:windows_msvc2017_x64:
+  stage: build
+  tags:
+    - windows
+  before_script:
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+  script:
+    - mkdir build\msvc2017_x64
+    - cd build\msvc2017_x64
+    - cmake ../.. -G "Visual Studio 15 2017 Win64" -DCMAKE_INSTALL_PREFIX="../../install/msvc2017_x64" -DCMAKE_BUILD_TYPE=Release
+    - cmake --build . --target install -j --config Release
+  artifacts:
+    paths:
+      - install/msvc2017_x64
+      - build/msvc2017_x64
+    when: on_success
+    expire_in: 30 minutes
+
+build:doxygen:
+  stage: build
+  tags:
+    - windows
+  script:
+    - mkdir install\doxygen
+    - mkdir build\doxygen
+    - cd build\doxygen
+    - cmake ../..
+    - cmake --build . --target Doxygen
+    - cd ${CI_PROJECT_DIR}
+    - move build\doxygen\doxygen\html\* install\doxygen
+  artifacts:
+    paths:
+    - install\doxygen
+    when: on_success
+    expire_in: 30 minutes
+  only:
+    - xxx 
+
+### Linux Tests
+
+test:linux:
+  stage: test 
+  tags:
+    - linux
+    - cuda
+  needs: ["build:linux"]
+  dependencies:
+    - build:linux
+  except:
+    - tags
+  script:
+    - export COVERAGE_OUTPUT_DIR=${CI_PROJECT_DIR}/coverage
+    - mkdir ${COVERAGE_OUTPUT_DIR}
+    - cd install/linux/samples/
+    - mkdir build 
+    - cd build
+    - cmake .. -DCMAKE_BUILD_TYPE=Release
+    - cmake --build . -j --config Release
+    - clinfo -l
+    - ctest . -C Release -j 20 --output-on-failure -T Test
+    - xsltproc ../common/CTest2JUnit.xsl Testing/`head -n 1 < Testing/TAG`/Test.xml > JUnitTestResults.xml
+    - gcovr -r ${CI_PROJECT_DIR} --html --html-details --object-directory=${CI_PROJECT_DIR} -o ${COVERAGE_OUTPUT_DIR}/index.html
+  artifacts:
+    paths:
+      - coverage/
+    reports:
+      junit: install/linux/samples/build/JUnitTestResults.xml
+
+#### Windows Tests
+
+test:windows_msvc2017_x64:
+  stage: test 
+  tags:
+    - windows 
+  needs: ["build:windows_msvc2017_x64"]
+  dependencies:
+    - build:windows_msvc2017_x64
+  except:
+    - tags    
+  script:
+    - cd install/msvc2017_x64/samples/
+    - mkdir build 
+    - cd build
+    - cmake .. -G "Visual Studio 15 2017 Win64"
+    - cmake --build . -j --config Release
+    - ctest . -C Release -j 20 --output-on-failure -T Test
+    - xsltproc ../common/CTest2JUnit.xsl $("Testing/" + (Get-Content Testing/TAG -First 1) + "/Test.xml") > ./JUnitTestResults.xml
+  artifacts:
+    reports:
+      junit: install/msvc2017_x64/samples/build/JUnitTestResults.xml
+
+### Package-Stage
+
+package:windows_msvc2017_x64_install:
+  stage: package
+  tags:
+    - windows
+  dependencies:
+    - build:windows_msvc2017_x64    
+  only:
+    - tags
+  script:
+    - cd build/msvc2017_x64
+    - CPack -G NSIS
+    - copy Hipacc-*.exe ../..
+  artifacts:
+    name: "Windows-Installer-x64"
+    paths:
+      - Hipacc-*.exe
+    when: on_success
+    expire_in: 3 yrs
+
+package:windows_msvc2017_x64_zip:
+  stage: package
+  tags:
+    - windows
+  dependencies:
+    - build:windows_msvc2017_x64    
+  only:
+    - tags
+  script:
+    - echo "Hello, World!"
+  artifacts:
+    name: "Windows-ZIP-x64"
+    paths:
+      - install/msvc2017_x64
+    when: on_success
+    expire_in: 3 yrs
+
+package:linux_x64_zip:
+  stage: package
+  tags:
+    - linux
+    - cuda
+  dependencies:
+    - build:linux_tagged
+  only:
+    - tags
+  script:
+    - echo "Hello, World!"
+  artifacts:
+    name: "Linux-ZIP-x64"
+    paths:
+      - install/linux
+    when: on_success
+    expire_in: 3 yrs
+
+package:linux_x64_deb:
+  stage: package
+  tags:
+    - linux
+    - cuda
+  dependencies:
+    - build:linux_tagged
+  only:
+    - tags
+  script:
+    - cd build/linux
+    - cpack -G DEB
+    - cp hipacc_*.deb ../..
+  artifacts:
+    name: "Linux-DEB-x64"
+    paths:
+      - hipacc_*.deb
+    when: on_success
+    expire_in: 3 yrs
+
+### Publish Analyses
+
+pages:
+  stage: deploy
+  tags:
+    - linux
+    - cuda  
+  dependencies:
+    - test:linux
+    - build:doxygen
+  script:
+    - mkdir -p public/coverage
+    - mkdir -p public/doxygen
+    - mv install/doxygen public
+    - mv coverage public
+  artifacts:
+    paths:
+      - public
+    expire_in: 30 days
+  only:
+    - xxx 
