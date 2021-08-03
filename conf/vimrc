@@ -1,0 +1,101 @@
+" Bo Qiao's vimrc
+
+execute pathogen#infect()
+
+set number
+highlight LineNr ctermfg=grey
+syntax on
+filetype plugin indent on
+
+set background=dark
+set t_Co=256
+set textwidth=82
+:set fillchars+=vert:\ 
+set foldcolumn=2
+hi foldcolumn ctermbg=gray
+hi VertSplit ctermbg=gray ctermfg=gray
+
+let g:airline_theme='minimalist'
+
+"highlight ColorColumn ctermbg=LightGray
+"set colorcolumn=82
+set hlsearch
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Powerline settings
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"set rtp+=/scratch-local/home/qiao/.local/lib/python2.7/site-packages/powerline/bindings/vim/
+
+" Always show statusline
+"set laststatus=2
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" NERDTree settings
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let g:nerdtree_tabs_open_on_console_startup=1
+let g:NERDTreeWinPos = "right"
+" Show the same instance of the NERDTree on every tab and find current file
+""nnoremap <C-N> :NERDTreeTabsToggle<CR>:wincmd l<CR>:NERDTreeTabsFind<CR>
+
+"" update nerdtree view as long as a new buffer is entered
+" Check if NERDTree is open or active
+function! IsNERDTreeOpen()        
+  return exists("t:NERDTreeBufName") && (bufwinnr(t:NERDTreeBufName) != -1)
+endfunction
+
+" Call NERDTreeFind iff NERDTree is active, current window contains a modifiable
+" file, and we're not in vimdiff
+function! SyncTree()
+  if &modifiable && IsNERDTreeOpen() && strlen(expand('%')) > 0 && !&diff
+    NERDTreeFind
+    wincmd p
+  endif
+endfunction
+
+" Highlight currently open buffer in NERDTree
+" Enable this mess up YCM
+autocmd BufEnter * call SyncTree()
+
+" resize side bar window width
+"let g:NERDTreeWinSize = 25
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" YouCompleteMe settings
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let g:ycm_auto_trigger = 1
+let g:ycm_confirm_extra_conf = 0
+let g:ycm_autoclose_preview_window_after_completion = 1
+"let g:ycm_global_ycm_extra_conf = '~/.ycm_extra_conf.py'
+"let g:ycm_key_list_select_completion = ['<C-Space>', '<Down>', '<Enter>']
+"let g:ycm_key_list_previous_completion = ['<C-S-Space>', '<Up>']
+"let g:EclimCompletionMethod = 'omnifunc'
+highlight YcmWarningLine guibg=#ffffcc
+highlight YcmErrorLine guibg=#ffffcc
+highlight YcmWarningSign guibg=#ffffcc
+highlight YcmErrorSign guibg=#ffffcc
+highlight YcmWarningSection guibg=#ffffcc
+highlight YcmErrorSection guibg=#ffffcc
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" format 
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"map <C-W>k :pyf /scratch-local/usr/local/src/llvm/tools/clang/tools/clang-format/clang-format.py<cr>
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" remap keys
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+nnoremap <C-j> 5j 
+nnoremap <C-k> 5k 
+nnoremap <C-t> :tabe<CR><C-W>w
+nnoremap <C-n> <C-W>w
+
+nnoremap <C-W>v :split .
+nnoremap <C-W>h :vsplit .
+
+nnoremap <C-h> gT 
+nnoremap <C-l> gt 
+noremap x "_x
+vnoremap p "_dP
+
+set pastetoggle=<F10>
+

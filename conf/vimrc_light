@@ -1,0 +1,67 @@
+" Bo Qiao's vimrc
+
+execute pathogen#infect()
+
+set number
+highlight LineNr ctermfg=grey
+syntax on
+filetype plugin indent on
+
+set background=dark
+set t_Co=256
+set textwidth=82
+:set fillchars+=vert:\ 
+set foldcolumn=2
+hi foldcolumn ctermbg=gray
+hi VertSplit ctermbg=gray ctermfg=gray
+
+set hlsearch
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" NERDTree settings
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let g:nerdtree_tabs_open_on_console_startup=1
+let g:NERDTreeWinPos = "right"
+" Show the same instance of the NERDTree on every tab and find current file
+""nnoremap <C-N> :NERDTreeTabsToggle<CR>:wincmd l<CR>:NERDTreeTabsFind<CR>
+
+"" update nerdtree view as long as a new buffer is entered
+" Check if NERDTree is open or active
+function! IsNERDTreeOpen()        
+  return exists("t:NERDTreeBufName") && (bufwinnr(t:NERDTreeBufName) != -1)
+endfunction
+
+" Call NERDTreeFind iff NERDTree is active, current window contains a modifiable
+" file, and we're not in vimdiff
+function! SyncTree()
+  if &modifiable && IsNERDTreeOpen() && strlen(expand('%')) > 0 && !&diff
+    NERDTreeFind
+    wincmd p
+  endif
+endfunction
+
+" Highlight currently open buffer in NERDTree
+" Enable this mess up YCM
+autocmd BufEnter * call SyncTree()
+
+" resize side bar window width
+"let g:NERDTreeWinSize = 25
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" remap keys
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+nnoremap <C-j> 5j 
+nnoremap <C-k> 5k 
+nnoremap <C-t> :tabe<CR><C-W>w
+nnoremap <C-n> <C-W>w
+
+nnoremap <C-W>v :split .
+nnoremap <C-W>h :vsplit .
+
+nnoremap <C-h> gT 
+nnoremap <C-l> gt 
+noremap x "_x
+vnoremap p "_dP
+
+set pastetoggle=<F10>
+

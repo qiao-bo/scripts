@@ -1,0 +1,6 @@
+Host codesign14
+  HostName codesign14.informatik.uni-erlangen.de
+
+Host codesign79
+  ProxyCommand ssh codesign14 -W %h:%p 
+  ServerAliveInterval 120
