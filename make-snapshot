@@ -1,0 +1,18 @@
+#!/bin/bash    
+
+#Purpose = Backup of Important Data
+
+#START
+
+# add date in Backup File Name.
+TIME=`date +%y-%b-%d-%H-%M-%S`            
+FILENAME=backup-$TIME.tar.gz            
+
+tar --exclude='*.tar.gz' -czf $FILENAME *
+
+# display the content in the compressed file
+echo Compressing the following files:
+tar -tvf $FILENAME 
+echo $FILENAME ----------
+
+#END
